@@ -38,47 +38,35 @@ jobs:
         install: >-
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-make
+          mingw-w64-x86_64-binutils
           make
-    
+
     - name: Build (Windows)
       if: matrix.os == 'windows-latest'
       shell: msys2 {0}
       run: |
         export OS=Windows_NT
-        echo "Building for Windows..."
-        echo "Current directory: $(pwd)"
-        echo "Files present:"
-        ls -la
-        echo "Compiler version:"
-        g++ --version
-        echo "Building sip.exe..."
-        if make sip.exe; then
-            echo "Build successful!"
-            echo "Files after build:"
-            ls -la
-            file sip.exe || echo "file command not available"
-        else
-            echo "MinGW build failed, trying direct g++ compilation..."
-            g++ -std=c++17 -O3 -Wall -Wextra -static-libgcc -static-libstdc++ sip.cpp -o sip.exe
-        fi
-    
+        make sip.exe
+        pacman -S --noconfirm ntldd
+        ntldd -R sip.exe || true
+        x86_64-w64-mingw32-strip sip.exe
+        ls -la sip.exe
+
     - name: Build (Linux)
       if: matrix.os == 'ubuntu-latest'
-      run: make ${{ matrix.make_target }}
+      run: |
+        make ${{ matrix.make_target }}
+        strip sip
     
     - name: Test binary (Windows)
       if: matrix.os == 'windows-latest'
       shell: msys2 {0}
       run: |
         if [ -f "sip.exe" ]; then
-            echo "sip.exe exists, testing..."
-            ls -la sip.exe
-            echo "Running version check..."
-            ./sip.exe --version || echo "Version check failed with exit code $?"
+          ./sip.exe --version || echo "Version check failed with exit code $?"
         else
-            echo "ERROR: sip.exe was not created!"
-            ls -la
-            exit 1
+          ls -la
+          exit 1
         fi
     
     - name: Test binary (Linux)
