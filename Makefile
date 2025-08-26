@@ -3,6 +3,10 @@ CXXFLAGS = -std=c++17 -O3 -Wall -Wextra
 TARGET = sip
 SOURCE = sip.cpp
 
+PREFIX ?= /usr/local
+DESTDIR ?=
+BINDIR ?= $(PREFIX)/bin
+
 ifeq ($(OS),Windows_NT)
 	TARGET = sip.exe
 	RM = del
@@ -22,6 +26,7 @@ ifeq ($(OS),Windows_NT)
 endif
 
 install: $(TARGET)
-	cp $(TARGET) /usr/local/bin/
+	mkdir -p $(DESTDIR)$(BINDIR)
+	cp $(TARGET) $(DESTDIR)$(BINDIR)/
 
 .PHONY: all clean install
