@@ -1,0 +1,24 @@
+# clang-format config for sip
+BasedOnStyle: Google
+IndentWidth: 4
+ColumnLimit: 100
+UseTab: Never
+
+# keep function signatures readable
+AllowAllParametersOfDeclarationOnNextLine: true
+BinPackParameters: false
+
+# prefer left alignment for pointers 
+PointerAlignment: Left
+
+# don't break short stuff
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# brace style
+BreakBeforeBraces: Attach
+
+# includes - system first, then project
+IncludeBlocks: Regroup
+SortIncludes: true

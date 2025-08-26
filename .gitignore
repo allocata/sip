@@ -1,0 +1,7 @@
+.vscode/
+sip
+*.o
+*.obj
+*.exe
+*.tmp
+*~

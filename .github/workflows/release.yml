@@ -1,0 +1,90 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux
+            artifact: sip
+            make_target: sip
+          - os: windows-latest
+            name: windows
+            artifact: sip.exe
+            make_target: sip.exe
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential curl git
+    
+    - name: Install dependencies (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install make
+        # Git and curl come with Windows runner
+    
+    - name: Build
+      run: make ${{ matrix.make_target }}
+    
+    - name: Test binary
+      run: ./${{ matrix.artifact }} --version
+      shell: bash
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: sip-${{ matrix.name }}
+        path: ${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+    
+    - name: Create Release
+      uses: ncipollo/action-gh-release@v1
+      with:
+        artifacts: "sip-linux/sip,sip-windows/sip.exe"
+        draft: false
+        prerelease: false
+        generateReleaseNotes: true
+        body: |
+          ## Installation
+          
+          ### Linux
+          ```bash
+          wget https://github.com/allocata/sip/releases/download/${{ github.ref_name }}/sip
+          chmod +x sip
+          sudo mv sip /usr/local/bin/
+          ```
+          
+          ### Windows
+          Download `sip.exe` and add it to your PATH.
+          
+          ### From Source
+          ```bash
+          git clone https://github.com/allocata/sip.git
+          cd sip
+          make
+          ```
+          
+          ## What's Changed
+          See the commits below for detailed changes.
