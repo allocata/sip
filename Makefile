@@ -4,11 +4,10 @@ TARGET = sip
 SOURCE = sip.cpp
 
 ifeq ($(OS),Windows_NT)
-    TARGET = sip.exe
-    CXXFLAGS += -static -static-libgcc -static-libstdc++ -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic -s
-    RM = del
+	TARGET = sip.exe
+	RM = del
 else
-    RM = rm -f
+	RM = rm -f
 endif
 
 all: $(TARGET)

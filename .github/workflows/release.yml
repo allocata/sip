@@ -17,7 +17,7 @@ jobs:
             make_target: sip
           - os: windows-latest
             name: windows
-            artifact: sip.exe
+            artifact: dist/*
             make_target: sip.exe
 
     steps:
@@ -39,7 +39,11 @@ jobs:
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-make
           mingw-w64-x86_64-binutils
+          mingw-w64-x86_64-ntldd
           make
+          awk
+          grep
+          coreutils
 
     - name: Build (Windows)
       if: matrix.os == 'windows-latest'
@@ -47,28 +51,18 @@ jobs:
       run: |
         export OS=Windows_NT
         make sip.exe
-        ls -la sip.exe
+        ./sip.exe --version || echo "Version check failed with exit code $?"
+        mkdir -p dist
+        cp sip.exe dist/
+        ntldd -R sip.exe | awk '/mingw64/ {print $3}' | xargs -I{} cp {} dist/
+        ls -la dist
 
     - name: Build (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
         make ${{ matrix.make_target }}
         strip sip
-    
-    - name: Test binary (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: msys2 {0}
-      run: |
-        if [ -f "sip.exe" ]; then
-          ./sip.exe --version || echo "Version check failed with exit code $?"
-        else
-          ls -la
-          exit 1
-        fi
-    
-    - name: Test binary (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: ./sip --version
+        ./sip --version
     
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -92,7 +86,7 @@ jobs:
       with:
         files: |
           sip-linux/sip
-          sip-windows/sip.exe
+          sip-windows/dist/*
         draft: false
         prerelease: false
         generate_release_notes: true
@@ -107,7 +101,7 @@ jobs:
           ```
           
           ### Windows
-          Download `sip.exe` and add it to your PATH.
+          Download the zip for Windows, unzip, and run sip.exe from the same folder as the included DLLs, or add that folder to PATH.
           
           ### From Source
           ```bash
