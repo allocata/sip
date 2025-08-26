@@ -16,9 +16,6 @@ all: $(TARGET)
 $(TARGET): $(SOURCE)
 	$(CXX) $(CXXFLAGS) $(SOURCE) -o $(TARGET)
 
-sip.exe: $(SOURCE)
-	$(CXX) $(CXXFLAGS) $(SOURCE) -o sip.exe
-
 clean:
 	$(RM) $(TARGET)
 ifeq ($(OS),Windows_NT)

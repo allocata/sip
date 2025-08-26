@@ -47,9 +47,6 @@ jobs:
       run: |
         export OS=Windows_NT
         make sip.exe
-        pacman -S --noconfirm ntldd
-        ntldd -R sip.exe || true
-        x86_64-w64-mingw32-strip sip.exe
         ls -la sip.exe
 
     - name: Build (Linux)
