@@ -14,18 +14,18 @@ endif
 all: $(TARGET)
 
 $(TARGET): $(SOURCE)
-    $(CXX) $(CXXFLAGS) $(SOURCE) -o $(TARGET)
+	$(CXX) $(CXXFLAGS) $(SOURCE) -o $(TARGET)
 
 sip.exe: $(SOURCE)
-    $(CXX) $(CXXFLAGS) $(SOURCE) -o sip.exe
+	$(CXX) $(CXXFLAGS) $(SOURCE) -o sip.exe
 
 clean:
-    $(RM) $(TARGET)
+	$(RM) $(TARGET)
 ifeq ($(OS),Windows_NT)
-    -$(RM) sip.exe 2>nul
+	-$(RM) sip.exe 2>nul
 endif
 
 install: $(TARGET)
-    cp $(TARGET) /usr/local/bin/
+	cp $(TARGET) /usr/local/bin/
 
 .PHONY: all clean install
