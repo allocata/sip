@@ -6,6 +6,7 @@ SOURCE = sip.cpp
 # Windows support
 ifeq ($(OS),Windows_NT)
     TARGET = sip.exe
+    CXXFLAGS += -static-libgcc -static-libstdc++
     RM = del
 else
     RM = rm -f
@@ -17,7 +18,7 @@ $(TARGET): $(SOURCE)
 	$(CXX) $(CXXFLAGS) $(SOURCE) -o $(TARGET)
 
 sip.exe: $(SOURCE)
-	$(CXX) $(CXXFLAGS) $(SOURCE) -o sip.exe
+	$(CXX) $(CXXFLAGS) -static-libgcc -static-libstdc++ $(SOURCE) -o sip.exe
 
 clean:
 	$(RM) $(TARGET)

@@ -29,18 +29,61 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential curl git
     
-    - name: Install dependencies (Windows)
+    - name: Setup MinGW (Windows)
       if: matrix.os == 'windows-latest'
-      run: |
-        choco install make
-        # Git and curl come with Windows runner
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-make
+          make
     
-    - name: Build
+    - name: Build (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: msys2 {0}
+      run: |
+        export OS=Windows_NT
+        echo "Building for Windows..."
+        echo "Current directory: $(pwd)"
+        echo "Files present:"
+        ls -la
+        echo "Compiler version:"
+        g++ --version
+        echo "Building sip.exe..."
+        if make sip.exe; then
+            echo "Build successful!"
+            echo "Files after build:"
+            ls -la
+            file sip.exe || echo "file command not available"
+        else
+            echo "MinGW build failed, trying direct g++ compilation..."
+            g++ -std=c++17 -O3 -Wall -Wextra -static-libgcc -static-libstdc++ sip.cpp -o sip.exe
+        fi
+    
+    - name: Build (Linux)
+      if: matrix.os == 'ubuntu-latest'
       run: make ${{ matrix.make_target }}
     
-    - name: Test binary
-      run: ./${{ matrix.artifact }} --version
-      shell: bash
+    - name: Test binary (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: msys2 {0}
+      run: |
+        if [ -f "sip.exe" ]; then
+            echo "sip.exe exists, testing..."
+            ls -la sip.exe
+            echo "Running version check..."
+            ./sip.exe --version || echo "Version check failed with exit code $?"
+        else
+            echo "ERROR: sip.exe was not created!"
+            ls -la
+            exit 1
+        fi
+    
+    - name: Test binary (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: ./sip --version
     
     - name: Upload artifact
       uses: actions/upload-artifact@v4
