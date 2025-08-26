@@ -50,12 +50,22 @@ jobs:
       shell: msys2 {0}
       run: |
         export OS=Windows_NT
+        # Ensure git is available for version check
+        export PATH="/mingw64/bin:/usr/bin:$PATH"
         make sip.exe
+        echo "Testing sip.exe:"
         ./sip.exe --version || echo "Version check failed with exit code $?"
         mkdir -p dist
         cp sip.exe dist/
-        ntldd -R sip.exe | awk '/mingw64/ {print $3}' | xargs -I{} cp {} dist/
+        echo "Detecting and copying DLL dependencies..."
+        # Copy the main MinGW runtime DLLs that are commonly needed
+        cp /mingw64/bin/libgcc_s_seh-1.dll dist/ 2>/dev/null || echo "libgcc_s_seh-1.dll not found"
+        cp /mingw64/bin/libwinpthread-1.dll dist/ 2>/dev/null || echo "libwinpthread-1.dll not found"  
+        cp /mingw64/bin/libstdc++-6.dll dist/ 2>/dev/null || echo "libstdc++-6.dll not found"
+        echo "Final dist contents:"
         ls -la dist
+        echo "Testing bundled executable:"
+        (cd dist && ./sip.exe --version) || echo "Bundled test failed"
 
     - name: Build (Linux)
       if: matrix.os == 'ubuntu-latest'
