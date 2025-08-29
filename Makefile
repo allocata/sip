@@ -7,7 +7,8 @@ BINDIR ?= $(PREFIX)/bin
 
 # Static linking for Windows to avoid DLL dependencies
 ifeq ($(OS),Windows_NT)
-	CXXFLAGS += -static-libgcc -static-libstdc++
+	CXXFLAGS += -static-libgcc -static-libstdc++ -static
+	LDFLAGS += -static
 	TARGET = sip.exe
 	RM = del
 else
