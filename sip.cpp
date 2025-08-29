@@ -19,7 +19,7 @@
 #include <vector>
 
 const char* PROGRAM_NAME = "sip";
-const char* PROGRAM_VERSION = "1.0.0";
+const char* PROGRAM_VERSION = "1.0.1";
 const int DEFAULT_TIMEOUT = 10;
 
 // globals
@@ -114,10 +114,16 @@ static bool parse_github_url(const std::string& url_or_repo, std::string& owner,
         repo = input.substr(first_slash + 1);
         path = "";
         branch = "";
+        if (owner.empty() || repo.empty()) {
+            return false;
+        }
         return true;
     }
     
     repo = input.substr(first_slash + 1, second_slash - first_slash - 1);
+    if (owner.empty() || repo.empty()) {
+        return false;
+    }
     std::string remainder = input.substr(second_slash + 1);
     
     if (remainder.rfind("tree/", 0) == 0) {
@@ -168,6 +174,10 @@ void usage(int status) {
         std::printf("  GITHUB_TOKEN             authenticate with private repositories\n\n");
         std::printf("Examples:\n");
         std::printf("  sip https://github.com/torvalds/linux/tree/master/LICENSES\n");
+        std::printf("  sip torvalds/linux LICENSE\n");
+        std::printf("  sip torvalds/linux/tree/v5.10/Documentation\n");
+        std::printf("  sip -b v2.6.39 torvalds/linux Makefile\n");
+        std::printf("  sip -o /tmp/linux torvalds/linux\n");
     }
     std::exit(status);
 }
@@ -217,6 +227,9 @@ std::string create_temp_dir() {
     
     std::error_code ec;
     if (!std::filesystem::create_directory(temp_path, ec)) {
+        if (opt_verbose) {
+            std::fprintf(stderr, "%s: failed to create temp directory: %s\n", PROGRAM_NAME, ec.message().c_str());
+        }
         return "";
     }
     return temp_path.string();
@@ -244,8 +257,12 @@ std::string discover_default_branch(const std::string& owner, const std::string&
     }
     
     FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe)
+    if (!pipe) {
+        if (opt_verbose) {
+            std::fprintf(stderr, "%s: failed to run git command\n", PROGRAM_NAME);
+        }
         return "main";
+    }
 
     char buf[512];
     std::string first;
@@ -279,17 +296,17 @@ bool check_dependencies(void) {
 #endif
 
     if (!curl_ok) {
-        fprintf(stderr, "%s: curl not found\n", PROGRAM_NAME);
+        fprintf(stderr, "%s: curl not found - please install curl\n", PROGRAM_NAME);
         return false;
     }
     if (!git_ok) {
-        fprintf(stderr, "%s: git not found\n", PROGRAM_NAME);
+        fprintf(stderr, "%s: git not found - please install git\n", PROGRAM_NAME);
         return false;
     }
     return true;
 }
 
-// sparse checkout is way faster for big repos
+// Downloads a specific directory from a GitHub repository using git sparse-checkout
 bool download_directory_selective(const std::string& owner,
                                   const std::string& repo,
                                   const std::string& path,
@@ -432,8 +449,7 @@ bool download_directory_selective(const std::string& owner,
     
     std::error_code copy_ec;
     std::filesystem::copy(src_path, dest_path, 
-                         std::filesystem::copy_options::recursive | 
-                         std::filesystem::copy_options::overwrite_existing, 
+                         std::filesystem::copy_options::recursive, 
                          copy_ec);
 
     std::error_code ec;
@@ -453,6 +469,7 @@ bool download_directory_selective(const std::string& owner,
     return true;
 }
 
+// Downloads a single file from a GitHub repository using curl
 bool download_file(const std::string& owner,
                    const std::string& repo,
                    const std::string& path,
@@ -511,6 +528,7 @@ bool download_file(const std::string& owner,
     return false;
 }
 
+// Clones an entire GitHub repository
 bool clone_repository(const std::string& owner,
                       const std::string& repo,
                       const std::string& /* path */,
@@ -620,7 +638,7 @@ int main(int argc, char** argv) {
                 char* endptr;
                 long timeout = std::strtol(optarg, &endptr, 10);
                 if (*endptr != '\0' || timeout <= 0 || timeout > INT_MAX) {
-                    std::fprintf(stderr, "%s: bad timeout '%s'\n", PROGRAM_NAME, optarg);
+                    std::fprintf(stderr, "%s: invalid timeout value '%s' (must be a positive integer)\n", PROGRAM_NAME, optarg);
                     std::exit(EXIT_FAILURE);
                 }
                 opt_timeout = static_cast<int>(timeout);

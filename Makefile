@@ -1,14 +1,17 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -O3 -Wall -Wextra
-TARGET = sip
-SOURCE = sip.cpp
 
+# Static linking for Windows to avoid DLL dependencies
 ifeq ($(OS),Windows_NT)
+	CXXFLAGS += -static-libgcc -static-libstdc++
 	TARGET = sip.exe
 	RM = del
 else
+	TARGET = sip
 	RM = rm -f
 endif
+
+SOURCE = sip.cpp
 
 all: $(TARGET)
 

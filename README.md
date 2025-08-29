@@ -10,21 +10,38 @@ arguments and full GitHub URLs.
 
 * `git` and `curl` in PATH
 * C++17 compiler (for building)
+* On Windows: MinGW-w64 with GCC (recommended) or MSVC with getopt compatibility
 
 ## Build
 
+### Linux/macOS
 ```
-g++ -std=c++17 -O2 -o sip sip.cpp
+g++ -std=c++17 -O3 -Wall -Wextra -o sip sip.cpp
 ./sip --version
 ```
 
+### Windows
+```
+# Using MinGW-w64 (recommended)
+g++ -std=c++17 -O3 -Wall -Wextra -static-libgcc -static-libstdc++ -o sip.exe sip.cpp
+
+# Or using the Makefile
+make
+```
+
+Windows builds use static linking to avoid DLL dependency issues. The resulting executable is self-contained and doesn't require external runtime libraries. Note: Windows executables will be larger (~2MB) due to included standard libraries.
+
 ## Install
 
-Copy the `sip` binary somewhere on your PATH, e.g.:
+Copy the `sip` (or `sip.exe` on Windows) binary somewhere on your PATH, e.g.:
 
+### Linux/macOS
 ```
 install -m755 sip /usr/local/bin/
 ```
+
+### Windows
+Copy `sip.exe` to a directory in your PATH, or use it directly from the build directory.
 
 ## Synopsis
 
