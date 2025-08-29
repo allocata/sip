@@ -1,6 +1,10 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -O3 -Wall -Wextra
 
+PREFIX ?= /usr/local
+DESTDIR ?=
+BINDIR ?= $(PREFIX)/bin
+
 # Static linking for Windows to avoid DLL dependencies
 ifeq ($(OS),Windows_NT)
 	CXXFLAGS += -static-libgcc -static-libstdc++
@@ -25,6 +29,7 @@ ifeq ($(OS),Windows_NT)
 endif
 
 install: $(TARGET)
-	cp $(TARGET) /usr/local/bin/
+	mkdir -p $(DESTDIR)$(BINDIR)
+	cp $(TARGET) $(DESTDIR)$(BINDIR)/
 
 .PHONY: all clean install
