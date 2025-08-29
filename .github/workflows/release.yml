@@ -17,7 +17,7 @@ jobs:
             make_target: sip
           - os: windows-latest
             name: windows
-            artifact: dist/*
+            artifact: sip.exe
             make_target: sip.exe
 
     steps:
@@ -55,15 +55,7 @@ jobs:
         make sip.exe
         echo "Testing sip.exe:"
         ./sip.exe --version || echo "Version check failed with exit code $?"
-        mkdir -p dist
-        cp sip.exe dist/
-        echo "Final dist contents:"
-        ls -la dist
-        echo "Testing bundled executable:"
-        (cd dist && ./sip.exe --version) || echo "Bundled test failed"
-        ls -la dist
-        echo "Testing bundled executable:"
-        (cd dist && ./sip.exe --version) || echo "Bundled test failed"
+        echo "Windows build complete - executable ready for upload"
 
     - name: Build (Linux)
       if: matrix.os == 'ubuntu-latest'
@@ -89,12 +81,23 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
     
+    - name: List downloaded files
+      run: |
+        echo "=== Downloaded files ==="
+        find . -type f -name "*" | head -20
+        echo "=== Directory structure ==="
+        ls -la
+        echo "=== sip-linux contents ==="
+        ls -la sip-linux/ 2>/dev/null || echo "sip-linux not found"
+        echo "=== sip-windows contents ==="
+        ls -la sip-windows/ 2>/dev/null || echo "sip-windows not found"
+    
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
         files: |
           sip-linux/sip
-          sip-windows/dist/*
+          sip-windows/sip.exe
         draft: false
         prerelease: false
         generate_release_notes: true
@@ -109,7 +112,13 @@ jobs:
           ```
           
           ### Windows
-          Download the zip for Windows, unzip, and run sip.exe from the same folder as the included DLLs, or add that folder to PATH.
+          ```bash
+          # Download sip.exe from the Windows release assets
+          # The executable is self-contained and doesn't require additional DLLs
+          wget https://github.com/allocata/sip/releases/download/${{ github.ref_name }}/sip.exe
+          # Run directly - no external dependencies needed
+          ./sip.exe --version
+          ```
           
           ### From Source
           ```bash
