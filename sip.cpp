@@ -56,6 +56,14 @@ static int exit_status_of(int rc) {
 #endif
 }
 
+static std::string make_git_command(const std::string& git_args) {
+#ifdef _WIN32
+    return "set GIT_TERMINAL_PROMPT=0 && git " + git_args;
+#else
+    return "GIT_TERMINAL_PROMPT=0 git " + git_args;
+#endif
+}
+
 static bool looks_like_commit_sha(const std::string& ref) {
     return ref.length() >= 6 && ref.length() <= 64 && 
            ref.find_first_not_of("0123456789abcdefABCDEF") == std::string::npos;
@@ -328,9 +336,9 @@ bool download_directory_selective(const std::string& owner,
     std::string auth_config = token ? ("-c http.extraHeader=" + 
                                       quote_arg(std::string("Authorization: Bearer ") + token) + " ") : "";
     
-    std::string clone_cmd = "GIT_TERMINAL_PROMPT=0 git " + auth_config + 
+    std::string clone_cmd = make_git_command(auth_config + 
                            "-c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 " +
-                           "clone --filter=blob:none --no-checkout --depth 1 ";
+                           "clone --filter=blob:none --no-checkout --depth 1 ");
     if (!opt_quiet)
         clone_cmd += "--progress ";
     clone_cmd += quote_arg(git_url) + " " + quote_arg(temp_dir);
@@ -347,8 +355,8 @@ bool download_directory_selective(const std::string& owner,
         return false;
     }
 
-    std::string sparse_init_cmd = "GIT_TERMINAL_PROMPT=0 git -C " + quote_arg(temp_dir) + 
-                                 " sparse-checkout init --cone";
+    std::string sparse_init_cmd = make_git_command("-C " + quote_arg(temp_dir) + 
+                                 " sparse-checkout init --cone");
     if (!opt_verbose) sparse_init_cmd += dev_null();
 
     if (opt_verbose)
@@ -362,8 +370,8 @@ bool download_directory_selective(const std::string& owner,
         return false;
     }
 
-    std::string sparse_set_cmd = "GIT_TERMINAL_PROMPT=0 git -C " + quote_arg(temp_dir) + 
-                                " sparse-checkout set -- " + quote_arg(path);
+    std::string sparse_set_cmd = make_git_command("-C " + quote_arg(temp_dir) + 
+                                " sparse-checkout set -- " + quote_arg(path));
     if (!opt_verbose) sparse_set_cmd += dev_null();
 
     if (opt_verbose)
@@ -382,22 +390,22 @@ bool download_directory_selective(const std::string& owner,
             std::fprintf(stderr, "%s: fetching reference '%s'...\n", PROGRAM_NAME, opt_branch.c_str());
         
         // try tag first
-        std::string fetch_tag_cmd = "GIT_TERMINAL_PROMPT=0 git -C " + quote_arg(temp_dir) + " " + auth_config + 
-                                   "fetch --depth 1 origin tag " + quote_arg(opt_branch);
+        std::string fetch_tag_cmd = make_git_command("-C " + quote_arg(temp_dir) + " " + auth_config + 
+                                   "fetch --depth 1 origin tag " + quote_arg(opt_branch));
         if (!opt_verbose) fetch_tag_cmd += dev_null();
         
         result = std::system(fetch_tag_cmd.c_str());
         if (result != 0) {
             // try branch
-            std::string fetch_branch_cmd = "GIT_TERMINAL_PROMPT=0 git -C " + quote_arg(temp_dir) + " " + auth_config + 
-                                          "fetch --depth 1 origin " + quote_arg(opt_branch) + ":" + quote_arg(opt_branch);
+            std::string fetch_branch_cmd = make_git_command("-C " + quote_arg(temp_dir) + " " + auth_config + 
+                                          "fetch --depth 1 origin " + quote_arg(opt_branch) + ":" + quote_arg(opt_branch));
             if (!opt_verbose) fetch_branch_cmd += dev_null();
             
             result = std::system(fetch_branch_cmd.c_str());
             if (result != 0 && looks_like_commit_sha(opt_branch)) {
                 // try direct SHA fetch
-                std::string fetch_sha_cmd = "GIT_TERMINAL_PROMPT=0 git -C " + quote_arg(temp_dir) + " " + auth_config + 
-                                           "fetch --depth 1 origin " + quote_arg(opt_branch);
+                std::string fetch_sha_cmd = make_git_command("-C " + quote_arg(temp_dir) + " " + auth_config + 
+                                           "fetch --depth 1 origin " + quote_arg(opt_branch));
                 if (!opt_verbose) fetch_sha_cmd += dev_null();
                 
                 result = std::system(fetch_sha_cmd.c_str());
@@ -411,7 +419,7 @@ bool download_directory_selective(const std::string& owner,
             return false;
         }
 
-        std::string checkout_cmd = "GIT_TERMINAL_PROMPT=0 git -C " + quote_arg(temp_dir) + " checkout " + quote_arg(opt_branch);
+        std::string checkout_cmd = make_git_command("-C " + quote_arg(temp_dir) + " checkout " + quote_arg(opt_branch));
         if (!opt_verbose) checkout_cmd += dev_null();
         
         if (opt_verbose)
@@ -426,7 +434,7 @@ bool download_directory_selective(const std::string& owner,
         }
     } else {
         // No specific branch - just checkout default with sparse rules
-        std::string checkout_cmd = "GIT_TERMINAL_PROMPT=0 git -C " + quote_arg(temp_dir) + " checkout";
+        std::string checkout_cmd = make_git_command("-C " + quote_arg(temp_dir) + " checkout");
         if (!opt_verbose) checkout_cmd += dev_null();
         
         if (opt_verbose)
@@ -546,8 +554,8 @@ bool clone_repository(const std::string& owner,
     
     bool is_sha = !opt_branch.empty() && looks_like_commit_sha(opt_branch);
     
-    std::string cmd = "GIT_TERMINAL_PROMPT=0 git " + auth_config + 
-                     "-c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 clone --depth 1 ";
+    std::string cmd = make_git_command(auth_config + 
+                     "-c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 clone --depth 1 ");
 
     if (!opt_quiet)
         cmd += "--progress ";
@@ -576,8 +584,8 @@ bool clone_repository(const std::string& owner,
     }
 
     if (is_sha) {
-        std::string sha_cmd = "GIT_TERMINAL_PROMPT=0 git -C " + quote_arg(output) + " " + auth_config +
-                             "fetch --depth 1 origin " + quote_arg(opt_branch);
+        std::string sha_cmd = make_git_command("-C " + quote_arg(output) + " " + auth_config +
+                             "fetch --depth 1 origin " + quote_arg(opt_branch));
         if (!opt_verbose) sha_cmd += dev_null();
         
         if (opt_verbose)
@@ -591,7 +599,7 @@ bool clone_repository(const std::string& owner,
             return false;
         }
 
-        std::string checkout_cmd = "GIT_TERMINAL_PROMPT=0 git -C " + quote_arg(output) + " checkout " + quote_arg(opt_branch);
+        std::string checkout_cmd = make_git_command("-C " + quote_arg(output) + " checkout " + quote_arg(opt_branch));
         if (!opt_verbose) checkout_cmd += dev_null();
         
         if (opt_verbose)
